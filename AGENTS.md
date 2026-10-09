@@ -18,7 +18,7 @@ Read these in full before touching the matching code:
 None. Use only Apple frameworks (Foundation, CryptoKit) and system tools (`/usr/bin/gunzip`, 1Password `op`). Never add third-party packages: a compromised dependency could take over the ASC account.
 
 ## Security Rules (MANDATORY)
-- **Keys**: `asc agent start` reads the private key, Key ID and Issuer ID with `op read` and hands them to the background agent through a pipe. Only the agent holds them, in memory, until its TTL ends or `asc agent stop`. Never write keys to disk, print them, log them or pass them as command-line arguments or environment variables.
+- **Keys**: `asc agent start` reads the private key, Key ID and Issuer ID with `op read` and hands them to the background agent through a pipe. Only the agent holds them, in memory, until its TTL ends or `asc agent stop`. Never write the private key to disk, print it, log it or pass it as a command-line argument or environment variable. The Key ID and Issuer ID are not secret.
 - **Blocklist**: `Blocklist.swift` is compiled into the binary and is checked before a JWT is created. A blocked request must never be signed or sent, and there is no override flag.
 - **Blocked operations**:
   - changing availability of apps, in-app purchases and subscriptions (includes removing from sale), ending pre-orders
