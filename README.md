@@ -5,9 +5,10 @@ A minimal App Store Connect API client for AI agents. It signs requests with a k
 ## Install
 
 ```bash
-brew tap domzilla/tap
-brew install asc
+brew install domzilla/tap/asc
 ```
+
+Always use the full name: Homebrew's core repository has an unrelated formula called `asc`, and a plain `brew install asc` installs that one instead.
 
 Requires the [1Password CLI](https://developer.1password.com/docs/cli/) with the desktop app integration enabled.
 
