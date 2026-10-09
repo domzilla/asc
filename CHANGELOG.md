@@ -19,3 +19,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The blocklist now refuses changes to which stores sell a subscription, since dropping the App Store takes it off sale.
 - The blocklist now refuses creating an App Store version with a release type or release date.
 - `asc spec find` and `asc spec show` now work offline from the cached spec when the daily update check fails, and respond faster.
+- Parallel writes during the daily spec update check no longer fail with a false "couldn't check Apple's API spec" error.

@@ -28,6 +28,28 @@ struct Spec {
         reviewedSHA256: Self.reviewedSHA256
     )
 
+    /// Runs at most one check at a time, so concurrent agent requests share one download and its result.
+    actor Check {
+        private var inFlight: Task<Void, any Error>?
+
+        func run(
+            force: Bool,
+            isDue: @Sendable () -> Bool,
+            download: @escaping @Sendable () async throws -> Void
+        ) async throws {
+            if let inFlight = self.inFlight {
+                return try await inFlight.value
+            }
+            guard force || isDue() else {
+                return
+            }
+            let task = Task { try await download() }
+            self.inFlight = task
+            defer { self.inFlight = nil }
+            try await task.value
+        }
+    }
+
     struct Status {
         let version: String
         let sha256: String
@@ -38,6 +60,7 @@ struct Spec {
     let downloadURL: URL
     let reviewedVersion: String
     let reviewedSHA256: String
+    let check = Check()
 
     private var specURL: URL {
         self.cacheDirectory.appendingPathComponent("openapi.oas.json")
@@ -71,9 +94,7 @@ struct Spec {
 
     /// The cached spec's status, downloading Apple's latest spec first if the last check is older than 24 hours.
     func status(forceCheck: Bool = false) async throws -> Status {
-        if forceCheck || self.isCheckDue {
-            try await self.download()
-        }
+        try await self.checkIfDue(force: forceCheck)
         let data = try Data(contentsOf: self.specURL)
         let checkedAt = try FileManager.default.attributesOfItem(atPath: self.checkURL.path)[.modificationDate] as? Date
         return try Status(
@@ -85,11 +106,9 @@ struct Spec {
 
     /// Lookups aren't gated, so a failed check falls back to the cached spec.
     func document() async throws -> [String: Any] {
-        if self.isCheckDue {
-            do {
-                try await self.download()
-            } catch where FileManager.default.fileExists(atPath: self.specURL.path) {}
-        }
+        do {
+            try await self.checkIfDue(force: false)
+        } catch where FileManager.default.fileExists(atPath: self.specURL.path) {}
         let data = try Data(contentsOf: self.specURL)
         guard let document = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw ASCError.failure("the cached spec is not a JSON object")
@@ -117,6 +136,10 @@ struct Spec {
         return Date().timeIntervalSince(checkedAt) > Self.checkInterval
     }
 
+    private func checkIfDue(force: Bool) async throws {
+        try await self.check.run(force: force, isDue: { self.isCheckDue }, download: { try await self.download() })
+    }
+
     private func download() async throws {
         let (zip, response) = try await APIClient.session.data(from: self.downloadURL)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
@@ -125,7 +148,7 @@ struct Spec {
 
         let manager = FileManager.default
         try self.createCacheDirectory()
-        let zipURL = self.cacheDirectory.appendingPathComponent("download.zip")
+        let zipURL = self.cacheDirectory.appendingPathComponent("download-\(UUID().uuidString).zip")
         try zip.write(to: zipURL, options: .atomic)
         defer { try? manager.removeItem(at: zipURL) }
 

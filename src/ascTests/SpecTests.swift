@@ -8,6 +8,7 @@
 
 import CryptoKit
 import Foundation
+import os
 import Testing
 @testable import asc
 
@@ -112,5 +113,27 @@ struct SpecTests {
         await #expect(throws: (any Error).self) {
             try await self.spec().status(forceCheck: true)
         }
+    }
+
+    @Test("Concurrent checks while one is due share a single download and its result")
+    func concurrentChecksDownloadOnce() async throws {
+        let check = Spec.Check()
+        let downloads = OSAllocatedUnfairLock(initialState: 0)
+        let isDue = OSAllocatedUnfairLock(initialState: true)
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0..<20 {
+                group.addTask {
+                    try await check.run(force: false, isDue: { isDue.withLock { $0 } }, download: {
+                        downloads.withLock { $0 += 1 }
+                        await Task.yield()
+                        isDue.withLock { $0 = false }
+                    })
+                }
+            }
+            try await group.waitForAll()
+        }
+
+        #expect(downloads.withLock { $0 } == 1)
     }
 }

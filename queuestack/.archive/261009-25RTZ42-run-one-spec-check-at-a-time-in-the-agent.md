@@ -3,11 +3,10 @@ id: '261009-25RTZ42'
 title: Run one spec check at a time in the agent
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.301053Z'
-status: open
+status: closed
 labels:
 - bug
 ---
-
 
 
 ## Parent
