@@ -17,6 +17,8 @@ struct Spec {
     static let reviewedSHA256 = "7518d3a94a8bd701ac25c1c601b95b8f53aad92091affb15a2a9d331713dac1a"
 
     static let checkInterval: TimeInterval = 24 * 60 * 60
+    static let specFileName = "openapi.oas.json"
+    static let checkFileName = "last-check"
 
     static let shared = Spec(
         cacheDirectory: FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
@@ -63,11 +65,11 @@ struct Spec {
     let check = Check()
 
     private var specURL: URL {
-        self.cacheDirectory.appendingPathComponent("openapi.oas.json")
+        self.cacheDirectory.appendingPathComponent(Self.specFileName)
     }
 
     private var checkURL: URL {
-        self.cacheDirectory.appendingPathComponent("last-check")
+        self.cacheDirectory.appendingPathComponent(Self.checkFileName)
     }
 
     // MARK: Public
@@ -147,11 +149,11 @@ struct Spec {
 
         let result = try ProcessRunner.run(
             URL(fileURLWithPath: "/usr/bin/unzip"),
-            arguments: ["-p", zipURL.path, "openapi.oas.json"],
+            arguments: ["-p", zipURL.path, Self.specFileName],
             timeout: 60
         )
-        guard result.status == 0, !result.isTimedOut else {
-            throw ASCError.failure("unzipping the spec failed: \(String(decoding: result.stderr, as: UTF8.self))")
+        if let message = result.failureMessage {
+            throw ASCError.failure("unzipping the spec failed: \(message)")
         }
         _ = try self.version(of: result.stdout)
 

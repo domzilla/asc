@@ -57,7 +57,7 @@ enum ASCError: Error, CustomStringConvertible {
         case let .agent(message):
             "Agent: \(message)"
         case .agentNotRunning:
-            "Agent: no agent running; start one with `asc agent start --credentials <op://Vault/Item>`"
+            "Agent: no agent running; start one with `asc agent start --credentials <\(Credentials.referencePlaceholder)>`"
         case let .api(status, body):
             "HTTP \(status)\n\(String(decoding: body, as: UTF8.self))"
         case let .failure(message):

@@ -9,7 +9,7 @@
 import Foundation
 
 /// Write operations asc refuses to send. Checked before any credentials are loaded or a token is signed; there is
-/// no override. Reviewed against API spec 4.5.1.
+/// no override. Reviewed against API spec `Spec.reviewedVersion`.
 ///
 /// Patterns match path segments case-insensitively: `*` and other globs match within one segment, a trailing `**`
 /// matches any number of further segments (including none).

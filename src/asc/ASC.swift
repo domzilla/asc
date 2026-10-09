@@ -15,7 +15,7 @@ enum ASC {
 
     USAGE
       asc --version
-      asc agent start --credentials <op://Vault/Item> [--ttl <duration>]
+      asc agent start --credentials <\(Credentials.referencePlaceholder)> [--ttl <duration>]
       asc agent status
       asc agent stop
       asc <GET|POST|PATCH|DELETE> <path> [options]
@@ -25,7 +25,7 @@ enum ASC {
 
     AGENT
       Requests go through a background agent that holds the API key in memory. Starting it reads the key from
-      1Password (one approval). It stops after --ttl (default 30m; e.g. 90s, 45m, 2h) or on `asc agent stop`.
+      1Password (one approval). It stops after --ttl (default \(Int(Agent.defaultTTL / 60))m; e.g. 90s, 45m, 2h) or on `asc agent stop`.
       The 1Password item needs key_id, issuer_id, the attachment AuthKey_<key_id>.p8 and optionally vendor_number.
 
     REQUEST OPTIONS
@@ -37,8 +37,10 @@ enum ASC {
     Gzip responses (sales and finance reports) are decompressed.
 
     EXIT CODES
-      0 ok · 1 API or other error · 2 usage · 3 blocked · 4 writes disabled (spec changed) · 5 credentials
-      6 agent not running or failed
+      0 ok · \(ASCError.failure("").exitCode) API or other error · \(ASCError.usage("").exitCode) usage · \
+    \(ASCError.blocked("").exitCode) blocked · \(ASCError.specGate("").exitCode) writes disabled (spec changed) · \
+    \(ASCError.credentials("").exitCode) credentials
+      \(ASCError.agent("").exitCode) agent not running or failed
     """
 
     static func main() async {
@@ -92,7 +94,7 @@ enum ASC {
                 }
             }
             guard let reference else {
-                throw ASCError.usage("missing --credentials <op://Vault/Item>")
+                throw ASCError.usage("missing --credentials <\(Credentials.referencePlaceholder)>")
             }
             try self.write(Agent.start(reference: reference, ttl: ttl) + "\n")
         case "status":

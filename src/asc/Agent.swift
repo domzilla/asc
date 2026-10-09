@@ -14,6 +14,8 @@ import Foundation
 /// before signing anything.
 enum Agent {
     static let defaultTTL: TimeInterval = 30 * 60
+    private static let startupTimeout: TimeInterval = 10
+    private static let startupPollInterval: TimeInterval = 0.1
 
     struct Request: Codable {
         enum Command: String, Codable {
@@ -69,7 +71,7 @@ enum Agent {
         )
         let pid = try self.spawnServer(input: startup)
 
-        for _ in 0..<100 {
+        for _ in 0..<Int(self.startupTimeout / self.startupPollInterval) {
             if let response = try? self.send(Request(command: .status)) {
                 return response.message ?? ""
             }
@@ -77,10 +79,10 @@ enum Agent {
             if waitpid(pid, &status, WNOHANG) == pid {
                 throw ASCError.agent("the agent exited during startup")
             }
-            usleep(100_000)
+            usleep(useconds_t(self.startupPollInterval * 1_000_000))
         }
         kill(pid, SIGTERM)
-        throw ASCError.agent("the agent didn't start within 10 seconds")
+        throw ASCError.agent("the agent didn't start within \(Int(self.startupTimeout)) seconds")
     }
 
     static func send(_ request: Request) throws -> Response {

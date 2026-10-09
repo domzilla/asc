@@ -15,6 +15,17 @@ enum ProcessRunner {
         let stdout: Data
         let stderr: Data
         let isTimedOut: Bool
+
+        /// `nil` if the tool exited with status 0 in time, otherwise why it failed.
+        var failureMessage: String? {
+            if self.isTimedOut {
+                return "timed out"
+            }
+            guard self.status != 0 else {
+                return nil
+            }
+            return String(decoding: self.stderr, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
     }
 
     static func run(

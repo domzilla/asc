@@ -33,8 +33,8 @@ struct SpecTests {
     /// Writes the cached spec and backdates the last check by `age`.
     func cache(checkedAgo age: TimeInterval) throws {
         try FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
-        try Self.specData.write(to: self.directory.appendingPathComponent("openapi.oas.json"))
-        let checkURL = self.directory.appendingPathComponent("last-check")
+        try Self.specData.write(to: self.directory.appendingPathComponent(Spec.specFileName))
+        let checkURL = self.directory.appendingPathComponent(Spec.checkFileName)
         try Data().write(to: checkURL)
         try FileManager.default.setAttributes(
             [.modificationDate: Date().addingTimeInterval(-age)],
@@ -72,7 +72,7 @@ struct SpecTests {
         await #expect(performing: {
             try await self.spec().ensureWritesAllowed()
         }, throws: Self.isSpecGateError)
-        #expect(try Data(contentsOf: self.directory.appendingPathComponent("openapi.oas.json")) == Self.specData)
+        #expect(try Data(contentsOf: self.directory.appendingPathComponent(Spec.specFileName)) == Self.specData)
     }
 
     @Test("Writes are refused when there is no cached spec and the download fails")

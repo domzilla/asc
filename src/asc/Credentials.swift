@@ -17,6 +17,8 @@ struct Credentials: Codable, CustomStringConvertible {
     let vendorNumber: String?
     let privateKeyPEM: String
 
+    static let referencePlaceholder = "op://Vault/Item"
+
     var description: String {
         "Credentials(keyID: \(self.keyID), issuerID: \(self.issuerID), privateKey: <redacted>)"
     }
@@ -43,7 +45,9 @@ struct Credentials: Codable, CustomStringConvertible {
     static func validatedItemReference(_ reference: String) throws -> String {
         let pattern = "^op://[^/]+/[^/]+$"
         guard reference.range(of: pattern, options: .regularExpression) != nil else {
-            throw ASCError.credentials("expected a 1Password item reference like op://Vault/Item, got '\(reference)'")
+            throw ASCError.credentials(
+                "expected a 1Password item reference like \(self.referencePlaceholder), got '\(reference)'"
+            )
         }
         return reference
     }
@@ -82,8 +86,7 @@ private struct OnePassword {
                     + "and the access prompt approved."
             )
         }
-        guard result.status == 0 else {
-            let message = String(decoding: result.stderr, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        if let message = result.failureMessage {
             throw ASCError.credentials("op read \(reference) failed: \(message)")
         }
         return String(decoding: result.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)

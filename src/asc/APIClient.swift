@@ -93,8 +93,8 @@ struct APIClient {
             input: data,
             timeout: 120
         )
-        guard result.status == 0, !result.isTimedOut else {
-            throw ASCError.failure("gunzip failed: \(String(decoding: result.stderr, as: UTF8.self))")
+        if let message = result.failureMessage {
+            throw ASCError.failure("gunzip failed: \(message)")
         }
         return result.stdout
     }

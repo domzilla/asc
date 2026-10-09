@@ -3,11 +3,10 @@ id: '261009-25RTNBG'
 title: Remove duplicated literals and tool-result checks
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.322263Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent

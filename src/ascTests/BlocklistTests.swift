@@ -43,7 +43,7 @@ struct BlocklistTests {
         #"{"data":{"type":"\#(type)","id":"1","attributes":{\#(attributes)}}}"#
     }
 
-    /// Every prohibited operation from AGENTS.md, as real endpoints from spec 4.5.1.
+    /// Every prohibited operation from AGENTS.md, as real endpoints from spec `Spec.reviewedVersion`.
     static let mustBlock: [Case] = [
         // Remove from sale / availability
         Case(
