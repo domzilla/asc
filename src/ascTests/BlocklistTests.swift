@@ -16,11 +16,14 @@ struct BlocklistTests {
         let method: String
         let path: String
         let body: String?
+        /// When set, the request must be blocked for exactly this reason.
+        let reason: String?
 
-        init(_ method: String, _ path: String, _ body: String? = nil) {
+        init(_ method: String, _ path: String, _ body: String? = nil, reason: String? = nil) {
             self.method = method
             self.path = path
             self.body = body
+            self.reason = reason
         }
 
         var testDescription: String {
@@ -46,12 +49,14 @@ struct BlocklistTests {
         Case(
             "PATCH",
             "/v1/territoryAvailabilities/T1",
-            Self.attributes("territoryAvailabilities", #""available":false"#)
+            Self.attributes("territoryAvailabilities", #""available":false"#),
+            reason: "changes territory availability"
         ),
         Case(
             "POST",
             "/v2/appAvailabilities",
-            Self.attributes("appAvailabilities", #""availableInNewTerritories":false"#)
+            Self.attributes("appAvailabilities", #""availableInNewTerritories":false"#),
+            reason: "changes app availability"
         ),
         Case("POST", "/v1/inAppPurchaseAvailabilities"),
         Case("POST", "/v1/subscriptionAvailabilities"),
@@ -119,9 +124,16 @@ struct BlocklistTests {
             )
         ),
         Case("PATCH", "/v1/nominations/1", Self.attributes("nominations", #""submitted":true"#)),
+        Case("POST", "/v1/nominations", Self.attributes("nominations", #""name":"Launch","submitted":true"#)),
         // Irreversible
         Case("PATCH", "/v1/subscriptions/1", Self.attributes("subscriptions", #""familySharable":true"#)),
         Case("PATCH", "/v2/inAppPurchases/1", Self.attributes("inAppPurchases", #""familySharable":true"#)),
+        Case("POST", "/v1/subscriptions", Self.attributes("subscriptions", #""name":"Monthly","familySharable":true"#)),
+        Case(
+            "POST",
+            "/v2/inAppPurchases",
+            Self.attributes("inAppPurchases", #""name":"Pro","productId":"pro","familySharable":true"#)
+        ),
         // Alternative distribution
         Case("POST", "/v1/alternativeDistributionKeys"),
         Case("DELETE", "/v1/alternativeDistributionDomains/1"),
@@ -139,7 +151,14 @@ struct BlocklistTests {
         Case("DELETE", "/v1/webhooks/1"),
         Case("DELETE", "/v1/endUserLicenseAgreements/1"),
         Case("DELETE", "/v1/appClipDefaultExperiences/1"),
+        Case("DELETE", "/v1/gameCenterAchievements/1"),
+        Case("DELETE", "/v2/gameCenterAchievements/1"),
         Case("DELETE", "/v2/gameCenterLeaderboards/1"),
+        Case("DELETE", "/v1/gameCenterLeaderboardSets/1"),
+        Case("DELETE", "/v2/gameCenterLeaderboardSets/1"),
+        Case("DELETE", "/v1/gameCenterGroups/1"),
+        Case("DELETE", "/v1/gameCenterActivities/1"),
+        Case("DELETE", "/v1/gameCenterChallenges/1"),
         Case("DELETE", "/v1/gameCenterMatchmakingQueues/1"),
     ]
 
@@ -211,7 +230,12 @@ struct BlocklistTests {
 
     @Test("Prohibited operations are blocked", arguments: Self.mustBlock)
     func blocksProhibitedOperation(_ testCase: Case) throws {
-        #expect(try Self.violation(testCase) != nil)
+        let violation = try Self.violation(testCase)
+        if let reason = testCase.reason {
+            #expect(violation == reason)
+        } else {
+            #expect(violation != nil)
+        }
     }
 
     @Test("Ordinary operations are allowed", arguments: Self.mustAllow)
@@ -238,9 +262,27 @@ struct BlocklistTests {
             }
             for method in rule.methods {
                 let reason = try Self.violation(Case(method, path, body))
-                #expect(reason != nil, "\(method) \(path) not blocked by \(rule.pattern)")
+                #expect(reason == rule.reason, "\(method) \(path) not blocked by \(rule.pattern)")
             }
         }
+    }
+
+    /// Listed here, not taken from `Blocklist.blockedTypes`, so removing a type fails a test.
+    static let blockedTypes = [
+        "appPrices",
+        "appPriceSchedules",
+        "inAppPurchasePrices",
+        "inAppPurchasePriceSchedules",
+        "subscriptionPrices",
+        "territoryAvailabilities",
+        "appAvailabilities",
+    ]
+
+    @Test("Every blocked type is refused in a write body", arguments: Self.blockedTypes)
+    func blocksType(_ type: String) throws {
+        let body = #"{"data":{"type":"apps","id":"1"},"included":[{"type":"\#(type)","id":"${new}"}]}"#
+        #expect(try Self
+            .violation(Case("PATCH", "/v1/apps/1", body)) == "the request body contains a '\(type)' resource")
     }
 
     @Test("Path matching ignores case")

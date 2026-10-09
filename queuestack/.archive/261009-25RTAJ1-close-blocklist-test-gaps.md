@@ -3,11 +3,10 @@ id: '261009-25RTAJ1'
 title: Close blocklist test gaps
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.224393Z'
-status: open
+status: closed
 labels:
 - test
 ---
-
 
 
 ## Parent
