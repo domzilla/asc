@@ -65,10 +65,36 @@ struct AgentTests {
         #expect(try UnixSocket.readAll(client) == Data(message.reversed()))
     }
 
-    @Test("Connecting without a listener reports that no agent is running")
-    func connectWithoutAgent() {
-        #expect(throws: ASCError.self) {
+    @Test("Connecting without a listener reports that no agent is running, with exit code 6 and a start hint")
+    func connectWithoutAgent() throws {
+        let error = #expect(throws: ASCError.self) {
             try UnixSocket.connect(to: "/tmp/asc-test-missing-\(getpid()).sock")
         }
+        guard case .agentNotRunning = try #require(error) else {
+            Issue.record("expected .agentNotRunning, got \(String(describing: error))")
+            return
+        }
+        #expect(error?.exitCode == 6)
+        #expect(error?.description.contains("asc agent start") == true)
+    }
+
+    @Test("Responses take exit code and message from ASCError")
+    func responseFromASCError() {
+        let response = Agent.Response(error: ASCError.blocked("no"))
+        #expect(response.exitCode == 3)
+        #expect(response.message == "BLOCKED: no. This operation is prohibited and was not sent.")
+        #expect(response.body == nil)
+    }
+
+    @Test("Errors from outside asc map to exit code 1 with their own text")
+    func responseFromForeignError() {
+        struct ForeignError: Error, CustomStringConvertible {
+            var description: String {
+                "disk on fire"
+            }
+        }
+        let response = Agent.Response(error: ForeignError())
+        #expect(response.exitCode == 1)
+        #expect(response.message == "disk on fire")
     }
 }

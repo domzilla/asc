@@ -207,7 +207,7 @@ private struct Server {
                 response = await self.perform(request)
             }
         } catch {
-            response = Agent.Response(exitCode: 6, message: "invalid request: \(error)")
+            response = Agent.Response(error: ASCError.agent("invalid request: \(error)"))
         }
 
         try? UnixSocket.writeAll(connection, JSONEncoder().encode(response))
@@ -258,10 +258,15 @@ private struct Server {
                 ? try await client.sendPaginated(path: path)
                 : try await client.send(method: method, path: path, body: body)
             return Agent.Response(exitCode: 0, body: data)
-        } catch let error as ASCError {
-            return Agent.Response(exitCode: error.exitCode, message: error.description)
         } catch {
-            return Agent.Response(exitCode: 1, message: "\(error)")
+            return Agent.Response(error: error)
         }
+    }
+}
+
+extension Agent.Response {
+    init(error: any Error) {
+        let error = ASCError(error)
+        self.init(exitCode: error.exitCode, message: error.description)
     }
 }

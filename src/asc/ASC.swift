@@ -44,12 +44,10 @@ enum ASC {
     static func main() async {
         do {
             try await self.run(Array(CommandLine.arguments.dropFirst()))
-        } catch let error as ASCError {
+        } catch {
+            let error = ASCError(error)
             self.writeError("asc: \(error)")
             exit(error.exitCode)
-        } catch {
-            self.writeError("asc: \(error)")
-            exit(1)
         }
     }
 
@@ -143,12 +141,7 @@ enum ASC {
             body: bodySource.map(self.readBody),
             isPaginated: isPaginated
         )
-        let response: Agent.Response
-        do {
-            response = try Agent.send(request)
-        } catch ASCError.agent("no agent running") {
-            throw ASCError.agent("no agent running; start one with `asc agent start --credentials <op://Vault/Item>`")
-        }
+        let response = try Agent.send(request)
         guard response.exitCode == 0 else {
             self.writeError("asc: \(response.message ?? "failed")")
             exit(response.exitCode)

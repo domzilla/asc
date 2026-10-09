@@ -3,11 +3,10 @@ id: '261009-25RTT1H'
 title: Typed agent errors and exit codes
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.257406Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent

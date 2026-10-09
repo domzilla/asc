@@ -43,7 +43,7 @@ enum UnixSocket {
         }
         guard connected == 0 else {
             close(fd)
-            throw ASCError.agent("no agent running")
+            throw ASCError.agentNotRunning
         }
         return fd
     }

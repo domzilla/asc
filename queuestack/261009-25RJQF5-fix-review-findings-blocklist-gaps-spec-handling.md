@@ -26,7 +26,7 @@ Proposed sequence, top to bottom. Check off each sub-item when it is closed.
 - [x] 261009-25RT975 — Share rule matching between Blocklist and spec find (blocked by: 261009-25RTRHW)
 - [x] 261009-25RTCW3 — Spec lookups parse once and work offline (blocked by: none)
 - [x] 261009-25RTZ42 — Run one spec check at a time in the agent (blocked by: 261009-25RTCW3)
-- [ ] 261009-25RTT1H — Typed agent errors and exit codes (blocked by: none)
+- [x] 261009-25RTT1H — Typed agent errors and exit codes (blocked by: none)
 - [ ] 261009-25RTQ2S — Tighten spec and agent tests (blocked by: 261009-25RTCW3, 261009-25RTT1H)
 - [ ] 261009-25RTZWB — Socket cleanup: umask, shared bind/connect, socket directory ownership (blocked by: none)
 - [ ] 261009-25RTNBG — Remove duplicated literals and tool-result checks (blocked by: 261009-25RTT1H)

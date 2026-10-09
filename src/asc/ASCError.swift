@@ -15,8 +15,14 @@ enum ASCError: Error, CustomStringConvertible {
     case specGate(String)
     case credentials(String)
     case agent(String)
+    case agentNotRunning
     case api(status: Int, body: Data)
     case failure(String)
+
+    /// Wraps errors from outside `asc` as `.failure`, so every error has an exit code.
+    init(_ error: any Error) {
+        self = error as? ASCError ?? .failure("\(error)")
+    }
 
     /// Distinct exit codes let agents tell a refused request apart from an API error.
     var exitCode: Int32 {
@@ -29,7 +35,7 @@ enum ASCError: Error, CustomStringConvertible {
             4
         case .credentials:
             5
-        case .agent:
+        case .agent, .agentNotRunning:
             6
         case .api, .failure:
             1
@@ -50,6 +56,8 @@ enum ASCError: Error, CustomStringConvertible {
             "Credentials: \(message)"
         case let .agent(message):
             "Agent: \(message)"
+        case .agentNotRunning:
+            "Agent: no agent running; start one with `asc agent start --credentials <op://Vault/Item>`"
         case let .api(status, body):
             "HTTP \(status)\n\(String(decoding: body, as: UTF8.self))"
         case let .failure(message):
