@@ -3,11 +3,10 @@ id: '261009-25RT8X6'
 title: Block release type and date on version creation
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.213103Z'
-status: open
+status: closed
 labels:
 - bug
 ---
-
 
 
 ## Parent

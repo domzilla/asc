@@ -102,6 +102,22 @@ struct BlocklistTests {
             "/v1/appStoreVersions/1",
             Self.attributes("appStoreVersions", #""earliestReleaseDate":"2030-01-01""#)
         ),
+        Case(
+            "POST",
+            "/v1/appStoreVersions",
+            Self.attributes(
+                "appStoreVersions",
+                #""platform":"IOS","versionString":"2.0","releaseType":"AFTER_APPROVAL""#
+            )
+        ),
+        Case(
+            "POST",
+            "/v1/appStoreVersions",
+            Self.attributes(
+                "appStoreVersions",
+                #""platform":"IOS","versionString":"2.0","earliestReleaseDate":"2030-01-01""#
+            )
+        ),
         Case("PATCH", "/v1/nominations/1", Self.attributes("nominations", #""submitted":true"#)),
         // Irreversible
         Case("PATCH", "/v1/subscriptions/1", Self.attributes("subscriptions", #""familySharable":true"#)),
@@ -136,6 +152,11 @@ struct BlocklistTests {
             Self.attributes("appStoreVersionLocalizations", #""whatsNew":"Fixes""#)
         ),
         Case("PATCH", "/v1/appStoreVersions/1", Self.attributes("appStoreVersions", #""versionString":"2.0""#)),
+        Case(
+            "POST",
+            "/v1/appStoreVersions",
+            Self.attributes("appStoreVersions", #""platform":"IOS","versionString":"2.0""#)
+        ),
         Case("PATCH", "/v1/builds/1", Self.attributes("builds", #""usesNonExemptEncryption":false"#)),
         Case("PATCH", "/v1/apps/1", Self.attributes("apps", #""primaryLocale":"de-DE""#)),
         Case("POST", "/v1/customerReviewResponses"),

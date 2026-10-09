@@ -81,6 +81,12 @@ enum Blocklist {
             attributes: ["releaseType", "earliestReleaseDate"],
             "changes when a version is released"
         ),
+        Rule(
+            ["POST"],
+            "/v*/appStoreVersions",
+            attributes: ["releaseType", "earliestReleaseDate"],
+            "changes when a version is released"
+        ),
         Rule(["POST", "PATCH"], "/v*/nominations/**", attributes: ["submitted"], "submits a featuring nomination"),
 
         // Irreversible settings
