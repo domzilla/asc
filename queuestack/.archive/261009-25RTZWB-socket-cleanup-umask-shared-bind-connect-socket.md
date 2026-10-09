@@ -3,11 +3,10 @@ id: '261009-25RTZWB'
 title: 'Socket cleanup: umask, shared bind/connect, socket directory ownership'
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.268217Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent

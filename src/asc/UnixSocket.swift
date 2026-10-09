@@ -15,37 +15,20 @@ enum UnixSocket {
     static let maxMessageSize = 256 * 1024 * 1024
 
     static func listen(at path: String) throws -> Int32 {
-        let fd = try self.socket()
-        var address = try self.address(path)
-        // Created with 0600 regardless of the caller's umask.
-        let previousMask = umask(0o177)
-        let bound = withUnsafePointer(to: &address) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                bind(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+        try self.open(path) { fd, address, length in
+            // The directory is already 0700; chmod instead of umask, which is process-wide.
+            guard bind(fd, address, length) == 0, chmod(path, 0o600) == 0, Darwin.listen(fd, 16) == 0 else {
+                throw ASCError.agent("can't listen on \(path): \(String(cString: strerror(errno)))")
             }
         }
-        umask(previousMask)
-        guard bound == 0, Darwin.listen(fd, 16) == 0 else {
-            let message = String(cString: strerror(errno))
-            close(fd)
-            throw ASCError.agent("can't listen on \(path): \(message)")
-        }
-        return fd
     }
 
     static func connect(to path: String) throws -> Int32 {
-        let fd = try self.socket()
-        var address = try self.address(path)
-        let connected = withUnsafePointer(to: &address) {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                Darwin.connect(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+        try self.open(path) { fd, address, length in
+            guard Darwin.connect(fd, address, length) == 0 else {
+                throw ASCError.agentNotRunning
             }
         }
-        guard connected == 0 else {
-            close(fd)
-            throw ASCError.agentNotRunning
-        }
-        return fd
     }
 
     /// True if the peer runs as the same user as this process.
@@ -93,6 +76,28 @@ enum UnixSocket {
     }
 
     // MARK: Private
+
+    /// Creates a socket and passes it with the address of `path` to `setUp`. Closes it if `setUp` throws.
+    private static func open(
+        _ path: String,
+        setUp: (Int32, UnsafePointer<sockaddr>, socklen_t) throws -> Void
+    ) throws
+        -> Int32
+    {
+        let fd = try self.socket()
+        do {
+            var address = try self.address(path)
+            try withUnsafePointer(to: &address) {
+                try $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                    try setUp(fd, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+                }
+            }
+        } catch {
+            close(fd)
+            throw error
+        }
+        return fd
+    }
 
     private static func socket() throws -> Int32 {
         let fd = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)

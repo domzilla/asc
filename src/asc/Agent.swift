@@ -42,8 +42,12 @@ enum Agent {
         let expiresAt: Date
     }
 
+    /// Private to the user: it holds the socket.
+    static let directory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("asc")
+
     static var socketPath: String {
-        Spec.shared.cacheDirectory.appendingPathComponent("agent.sock").path
+        self.directory.appendingPathComponent("agent.sock").path
     }
 
     // MARK: Public
@@ -57,7 +61,7 @@ enum Agent {
         let credentials = try Credentials.load(from: reference)
         _ = try JWT.token(for: credentials)
 
-        try Spec.shared.createCacheDirectory()
+        try self.createDirectory()
         unlink(self.socketPath)
 
         let startup = try JSONEncoder().encode(
@@ -139,6 +143,12 @@ enum Agent {
     }
 
     // MARK: Private
+
+    private static func createDirectory() throws {
+        let manager = FileManager.default
+        try manager.createDirectory(at: self.directory, withIntermediateDirectories: true)
+        try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: self.directory.path)
+    }
 
     fileprivate static func shutDown() -> Never {
         unlink(self.socketPath)

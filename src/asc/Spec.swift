@@ -116,13 +116,6 @@ struct Spec {
         return document
     }
 
-    /// Private to the user: it holds the agent's socket.
-    func createCacheDirectory() throws {
-        let manager = FileManager.default
-        try manager.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
-        try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: self.cacheDirectory.path)
-    }
-
     // MARK: Private
 
     private var isCheckDue: Bool {
@@ -147,7 +140,7 @@ struct Spec {
         }
 
         let manager = FileManager.default
-        try self.createCacheDirectory()
+        try manager.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
         let zipURL = self.cacheDirectory.appendingPathComponent("download-\(UUID().uuidString).zip")
         try zip.write(to: zipURL, options: .atomic)
         defer { try? manager.removeItem(at: zipURL) }
