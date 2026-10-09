@@ -41,6 +41,12 @@ enum Blocklist {
         Rule(write, "/v*/inAppPurchaseAvailabilities/**", "changes in-app purchase availability"),
         Rule(write, "/v*/subscriptionAvailabilities/**", "changes subscription availability"),
         Rule(write, "/v*/subscriptionPlanAvailabilities/**", "changes subscription availability"),
+        Rule(
+            ["POST", "PATCH"],
+            "/v*/subscriptions/**",
+            attributes: ["marketSettings"],
+            "changes subscription availability"
+        ),
         Rule(write, "/v*/endAppAvailabilityPreOrders/**", "ends a pre-order"),
         Rule(["PATCH"], "/v*/appStoreVersions/*", attributes: ["downloadable"], "changes version availability"),
 

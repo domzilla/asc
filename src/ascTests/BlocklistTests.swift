@@ -58,6 +58,11 @@ struct BlocklistTests {
         Case("PATCH", "/v1/subscriptionPlanAvailabilities/1/relationships/availableTerritories"),
         Case("POST", "/v1/endAppAvailabilityPreOrders"),
         Case("PATCH", "/v1/appStoreVersions/1", Self.attributes("appStoreVersions", #""downloadable":false"#)),
+        Case(
+            "PATCH",
+            "/v1/subscriptions/1",
+            Self.attributes("subscriptions", #""marketSettings":["APPLE_SCHOOL"]"#)
+        ),
         // Certificates
         Case("DELETE", "/v1/certificates/C1"),
         Case("PATCH", "/v1/certificates/C1", Self.attributes("certificates", #""activated":false"#)),

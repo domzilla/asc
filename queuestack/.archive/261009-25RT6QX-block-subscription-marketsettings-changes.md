@@ -3,11 +3,10 @@ id: '261009-25RT6QX'
 title: Block subscription marketSettings changes
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.201214Z'
-status: open
+status: closed
 labels:
 - bug
 ---
-
 
 
 ## Parent

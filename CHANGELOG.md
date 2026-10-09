@@ -14,3 +14,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Writes are disabled when Apple's API spec changes until the new spec has been reviewed.
 - `asc spec find` and `asc spec show` look up endpoints in Apple's API spec and show which are blocked.
 - `asc --version` prints the installed version.
+
+### Fixed
+- The blocklist now refuses changes to which stores sell a subscription, since dropping the App Store takes it off sale.
