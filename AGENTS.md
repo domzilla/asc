@@ -18,16 +18,19 @@ Read these in full before touching the matching code:
 None. Use only Apple frameworks (Foundation, CryptoKit) and system tools (`/usr/bin/gunzip`, 1Password `op`). Never add third-party packages: a compromised dependency could take over the ASC account.
 
 ## Security Rules (MANDATORY)
-- **Keys**: Read the private key, Key ID and Issuer ID with `op read` at runtime. Keep them only in process memory. Never write keys to disk, print them, log them or pass them as command-line arguments.
+- **Keys**: `asc agent start` reads the private key, Key ID and Issuer ID with `op read` and hands them to the background agent through a pipe. Only the agent holds them, in memory, until its TTL ends or `asc agent stop`. Never write keys to disk, print them, log them or pass them as command-line arguments or environment variables.
 - **Blocklist**: `Blocklist.swift` is compiled into the binary and is checked before a JWT is created. A blocked request must never be signed or sent, and there is no override flag.
-- **Blocked operations** include:
-  - removing an app from sale (changing availability)
-  - revoking or deleting certificates, bundle IDs, profiles, merchant IDs or pass type IDs
-  - deleting users or changing their roles
+- **Blocked operations**:
+  - changing availability of apps, in-app purchases and subscriptions (includes removing from sale), ending pre-orders
+  - changing prices of apps, in-app purchases and subscriptions
+  - revoking or deactivating certificates
+  - managing users, roles, visible apps and invitations
   - expiring builds
-  - any price change (app, IAP, subscription)
-  - submitting, releasing or changing phased release
-  - other destructive DELETEs
+  - submitting versions, in-app purchases, subscriptions, subscription groups or featuring nominations for review; releasing versions; changing release type, release date or phased release
+  - enabling Family Sharing (irreversible)
+  - alternative distribution and marketplace settings
+  - deleting App Store versions, in-app purchases, subscriptions, subscription groups, custom product pages, in-app events, A/B tests, Xcode Cloud products and workflows, webhooks, license agreements, App Clip experiences and Game Center objects (the objects themselves; editing their relationships stays allowed)
+- **Allowed on purpose** (the user decided; don't block them): offers and offer codes, bundle IDs, capabilities, profiles, merchant and pass type IDs, TestFlight beta review submissions, starting A/B tests, Game Center releases, analytics report request deletion.
 - **Blocklist tests**: Every blocklist rule needs a test that proves it blocks. Never remove or loosen a rule without explicit user instruction.
 - **New endpoints**: Apple adds endpoints with spec updates, and a blocklist allows them until reviewed. That is why writes are pinned to the reviewed spec (see API Spec).
 
