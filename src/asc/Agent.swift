@@ -167,7 +167,8 @@ enum Agent {
         defer { posix_spawnattr_destroy(&attributes) }
         posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETSID | POSIX_SPAWN_CLOEXEC_DEFAULT))
 
-        let arguments: [UnsafeMutablePointer<CChar>?] = [executable, "agent", "serve"].map { strdup($0) } + [nil]
+        let strings: [String] = [executable, "agent", "serve"]
+        let arguments: [UnsafeMutablePointer<CChar>?] = strings.map { $0.withCString { strdup($0) } } + [nil]
         defer { arguments.forEach { free($0) } }
 
         var pid: pid_t = 0
