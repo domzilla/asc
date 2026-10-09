@@ -1,0 +1,151 @@
+//
+//  Spec.swift
+//  asc
+//
+//  Created by Dominic Rodemer on 09/10/2026.
+//  Copyright © 2026 Dominic Rodemer. All rights reserved.
+//
+
+import CryptoKit
+import Foundation
+
+/// Apple's App Store Connect OpenAPI spec. Writes are only allowed while Apple's latest spec is exactly the one the
+/// blocklist was reviewed against, so new endpoints can't slip through unreviewed.
+struct Spec {
+    /// Bump both only after reviewing the new spec's write endpoints against `Blocklist`.
+    static let reviewedVersion = "4.5.1"
+    static let reviewedSHA256 = "7518d3a94a8bd701ac25c1c601b95b8f53aad92091affb15a2a9d331713dac1a"
+
+    static let checkInterval: TimeInterval = 24 * 60 * 60
+
+    static let shared = Spec(
+        cacheDirectory: FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("asc"),
+        downloadURL: URL(
+            string: "https://developer.apple.com/sample-code/app-store-connect/app-store-connect-openapi-specification.zip"
+        )!,
+        reviewedVersion: Self.reviewedVersion,
+        reviewedSHA256: Self.reviewedSHA256
+    )
+
+    struct Status {
+        let version: String
+        let sha256: String
+        let checkedAt: Date
+    }
+
+    let cacheDirectory: URL
+    let downloadURL: URL
+    let reviewedVersion: String
+    let reviewedSHA256: String
+
+    private var specURL: URL {
+        self.cacheDirectory.appendingPathComponent("openapi.oas.json")
+    }
+
+    private var checkURL: URL {
+        self.cacheDirectory.appendingPathComponent("last-check")
+    }
+
+    // MARK: Public
+
+    func isReviewed(_ status: Status) -> Bool {
+        status.version == self.reviewedVersion && status.sha256 == self.reviewedSHA256
+    }
+
+    func ensureWritesAllowed() async throws {
+        let status: Status
+        do {
+            status = try await self.status()
+        } catch {
+            throw ASCError.specGate("couldn't check Apple's API spec for updates (\(error))")
+        }
+        guard self.isReviewed(status) else {
+            throw ASCError.specGate(
+                "Apple's API spec changed (reviewed \(self.reviewedVersion) \(self.reviewedSHA256.prefix(12)), "
+                    + "latest \(status.version) \(status.sha256.prefix(12))). The user must review the new write "
+                    + "endpoints against the blocklist and update Spec.reviewedVersion/reviewedSHA256."
+            )
+        }
+    }
+
+    /// The cached spec's status, downloading Apple's latest spec first if the last check is older than 24 hours.
+    func status(forceCheck: Bool = false) async throws -> Status {
+        if forceCheck || self.isCheckDue {
+            try await self.download()
+        }
+        let data = try Data(contentsOf: self.specURL)
+        let checkedAt = try FileManager.default.attributesOfItem(atPath: self.checkURL.path)[.modificationDate] as? Date
+        return try Status(
+            version: self.version(of: data),
+            sha256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined(),
+            checkedAt: checkedAt ?? .distantPast
+        )
+    }
+
+    func document() async throws -> [String: Any] {
+        _ = try await self.status()
+        let data = try Data(contentsOf: self.specURL)
+        guard let document = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw ASCError.failure("the cached spec is not a JSON object")
+        }
+        return document
+    }
+
+    /// Private to the user: it holds the agent's socket.
+    func createCacheDirectory() throws {
+        let manager = FileManager.default
+        try manager.createDirectory(at: self.cacheDirectory, withIntermediateDirectories: true)
+        try manager.setAttributes([.posixPermissions: 0o700], ofItemAtPath: self.cacheDirectory.path)
+    }
+
+    // MARK: Private
+
+    private var isCheckDue: Bool {
+        let manager = FileManager.default
+        guard
+            manager.fileExists(atPath: self.specURL.path),
+            let checkedAt = try? manager.attributesOfItem(atPath: self.checkURL.path)[.modificationDate] as? Date else
+        {
+            return true
+        }
+        return Date().timeIntervalSince(checkedAt) > Self.checkInterval
+    }
+
+    private func download() async throws {
+        let (zip, response) = try await APIClient.session.data(from: self.downloadURL)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw ASCError.failure("downloading the spec failed with \(response)")
+        }
+
+        let manager = FileManager.default
+        try self.createCacheDirectory()
+        let zipURL = self.cacheDirectory.appendingPathComponent("download.zip")
+        try zip.write(to: zipURL, options: .atomic)
+        defer { try? manager.removeItem(at: zipURL) }
+
+        let result = try ProcessRunner.run(
+            URL(fileURLWithPath: "/usr/bin/unzip"),
+            arguments: ["-p", zipURL.path, "openapi.oas.json"],
+            timeout: 60
+        )
+        guard result.status == 0, !result.isTimedOut else {
+            throw ASCError.failure("unzipping the spec failed: \(String(decoding: result.stderr, as: UTF8.self))")
+        }
+        _ = try self.version(of: result.stdout)
+
+        try result.stdout.write(to: self.specURL, options: .atomic)
+        try Data().write(to: self.checkURL, options: .atomic)
+    }
+
+    private func version(of data: Data) throws -> String {
+        guard
+            let document = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let info = document["info"] as? [String: Any],
+            let version = info["version"] as? String else
+        {
+            throw ASCError.failure("the spec has no info.version")
+        }
+        return version
+    }
+}

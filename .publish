@@ -1,0 +1,15 @@
+---
+version_source: plist
+plist_path: src/asc/Resources/Info.plist
+tag_prefix: v
+release_branch: master
+git_remotes:
+- origin
+- github.com
+publishers:
+- homebrew-tap
+post_publish_commands:
+- echo "Release {{version}} complete"
+homebrew-tap:
+  formula: asc
+  tap_repo: domzilla/homebrew-tap
