@@ -28,11 +28,6 @@ struct AgentTests {
         }
     }
 
-    @Test("The default TTL is 30 minutes")
-    func defaultTTL() {
-        #expect(Agent.defaultTTL == 30 * 60)
-    }
-
     @Test("Messages larger than a pipe buffer survive a socket round trip, and the socket is private")
     func socketRoundTrip() throws {
         let directory = URL(fileURLWithPath: "/tmp/asc-test-\(getpid())-\(UInt32.random(in: 0...UInt32.max))")

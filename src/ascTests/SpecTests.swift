@@ -21,11 +21,11 @@ struct SpecTests {
 
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent("asc-spec-test-\(UUID().uuidString)")
 
-    func spec(reviewedSHA256: String = Self.specSHA256) -> Spec {
+    func spec(reviewedVersion: String = "9.9.9", reviewedSHA256: String = Self.specSHA256) -> Spec {
         Spec(
             cacheDirectory: self.directory,
             downloadURL: Self.unreachableURL,
-            reviewedVersion: "9.9.9",
+            reviewedVersion: reviewedVersion,
             reviewedSHA256: reviewedSHA256
         )
     }
@@ -47,6 +47,13 @@ struct SpecTests {
             return false
         }
         return true
+    }
+
+    static func isSpecChangedError(_ error: any Error) -> Bool {
+        guard case let .specGate(message) = error as? ASCError else {
+            return false
+        }
+        return message.hasPrefix("Apple's API spec changed")
     }
 
     @Test("A recently checked, reviewed spec allows writes without downloading")
@@ -77,14 +84,24 @@ struct SpecTests {
         }, throws: Self.isSpecGateError)
     }
 
-    @Test("Writes are refused when the cached spec differs from the reviewed one")
-    func refusesUnreviewedSpec() async throws {
+    @Test("Writes are refused because the spec changed when the cached spec's SHA-256 differs from the reviewed one")
+    func refusesUnreviewedSHA256() async throws {
         defer { try? FileManager.default.removeItem(at: self.directory) }
         try self.cache(checkedAgo: 60)
 
         await #expect(performing: {
             try await self.spec(reviewedSHA256: String(repeating: "0", count: 64)).ensureWritesAllowed()
-        }, throws: Self.isSpecGateError)
+        }, throws: Self.isSpecChangedError)
+    }
+
+    @Test("Writes are refused because the spec changed when the cached spec's version differs from the reviewed one")
+    func refusesUnreviewedVersion() async throws {
+        defer { try? FileManager.default.removeItem(at: self.directory) }
+        try self.cache(checkedAgo: 60)
+
+        await #expect(performing: {
+            try await self.spec(reviewedVersion: "9.9.8").ensureWritesAllowed()
+        }, throws: Self.isSpecChangedError)
     }
 
     @Test("Lookups fall back to the cached spec when the due check fails")
@@ -110,7 +127,7 @@ struct SpecTests {
         defer { try? FileManager.default.removeItem(at: self.directory) }
         try self.cache(checkedAgo: 60)
 
-        await #expect(throws: (any Error).self) {
+        await #expect(throws: URLError.self) {
             try await self.spec().status(forceCheck: true)
         }
     }
