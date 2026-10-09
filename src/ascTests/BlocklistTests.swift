@@ -330,6 +330,18 @@ struct BlocklistTests {
         #expect(try Self.violation(Case("GET", "/v1/appPriceSchedules")) == nil)
     }
 
+    @Test("Applicable rules match method and path, ignoring attributes")
+    func applicableRules() throws {
+        let build = try RequestPath("/v1/builds/B1")
+        #expect(Blocklist.applicableRules(method: .patch, path: build).map(\.attributes) == [["expired"]])
+        #expect(Blocklist.applicableRules(method: .get, path: build).isEmpty)
+        let certificate = try RequestPath("/v1/certificates/C1")
+        #expect(Blocklist.applicableRules(method: .delete, path: certificate).map(\.reason) == [
+            "revokes or deactivates a certificate",
+        ])
+        #expect(try Blocklist.applicableRules(method: .post, path: RequestPath("/v1/betaGroups")).isEmpty)
+    }
+
     @Test("Glob patterns match exactly one segment; ** matches the rest")
     func patternSemantics() {
         #expect(Blocklist.matches("/v*/users/**", ["v1", "users"]))

@@ -87,13 +87,9 @@ struct SpecLookup {
         if let reason = Blocklist.violation(method: method, path: requestPath, body: nil) {
             return "  [BLOCKED: \(reason)]"
         }
-        let attributeRules = Blocklist.rules.filter {
-            $0.attributes != nil && $0.methods.contains(method)
-                && Blocklist.matches($0.pattern, requestPath.segments)
-        }
-        if !attributeRules.isEmpty {
-            let attributes = attributeRules.flatMap { $0.attributes ?? [] }.sorted().joined(separator: ", ")
-            return "  [BLOCKED attributes: \(attributes)]"
+        let attributes = Blocklist.applicableRules(method: method, path: requestPath).flatMap { $0.attributes ?? [] }
+        if !attributes.isEmpty {
+            return "  [BLOCKED attributes: \(attributes.sorted().joined(separator: ", "))]"
         }
         return ""
     }

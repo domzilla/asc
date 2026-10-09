@@ -155,7 +155,7 @@ enum Blocklist {
         }
 
         let attributes = json.map(self.attributeNames) ?? []
-        for rule in self.rules where rule.methods.contains(method) && self.matches(rule.pattern, path.segments) {
+        for rule in self.applicableRules(method: method, path: path) {
             if
                 let ruleAttributes = rule.attributes,
                 Set(ruleAttributes.map { $0.lowercased() }).isDisjoint(with: attributes)
@@ -169,6 +169,11 @@ enum Blocklist {
             return "the request body contains a '\(type)' resource"
         }
         return nil
+    }
+
+    /// Rules whose method and pattern match, before any attribute check. Shared by `violation` and `asc spec find`.
+    static func applicableRules(method: HTTPMethod, path: RequestPath) -> [Rule] {
+        self.rules.filter { $0.methods.contains(method) && self.matches($0.pattern, path.segments) }
     }
 
     static func canonicalBody(_ body: Data) throws -> Data {

@@ -3,11 +3,10 @@ id: '261009-25RT975'
 title: Share rule matching between Blocklist and spec find
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.290083Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent
