@@ -13,6 +13,8 @@ enum JWT {
     /// Apple rejects tokens that live longer than 20 minutes.
     static let lifetime: TimeInterval = 15 * 60
 
+    // MARK: Public
+
     static func token(for credentials: Credentials, now: Date = Date()) throws -> String {
         let key: P256.Signing.PrivateKey
         do {
@@ -22,12 +24,12 @@ enum JWT {
         }
 
         let issuedAt = Int(now.timeIntervalSince1970)
-        let header: [String: Any] = ["alg": "ES256", "kid": credentials.keyID, "typ": "JWT"]
+        let header: [String: Any] = ["alg": "ES256", "kid": credentials.keyID.rawValue, "typ": "JWT"]
         let payload: [String: Any] = [
             "aud": "appstoreconnect-v1",
             "exp": issuedAt + Int(self.lifetime),
             "iat": issuedAt,
-            "iss": credentials.issuerID,
+            "iss": credentials.issuerID.rawValue,
         ]
 
         let signingInput = try self.base64URL(self.json(header)) + "." + self.base64URL(self.json(payload))
@@ -41,6 +43,8 @@ enum JWT {
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
     }
+
+    // MARK: Private
 
     private static func json(_ object: [String: Any]) throws -> Data {
         try JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])

@@ -139,6 +139,8 @@ enum Blocklist {
         "appAvailabilities",
     ]
 
+    // MARK: Public
+
     /// Returns why the request is blocked, or nil if it may be sent. The caller must send `canonicalBody(_:)`, not the
     /// raw body, so the server parses exactly what was checked here (duplicate JSON keys could otherwise differ).
     static func violation(method: HTTPMethod, path: RequestPath, body: Data?) -> String? {
@@ -193,6 +195,8 @@ enum Blocklist {
             fnmatch(String(patternSegment), String(segment), FNM_CASEFOLD) == 0
         }
     }
+
+    // MARK: Private
 
     /// Lowercased, matching the case-insensitive comparison in `violation`.
     private static func attributeNames(in json: Any) -> Set<String> {

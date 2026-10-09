@@ -14,6 +14,8 @@ import Foundation
 enum UnixSocket {
     static let maxMessageSize = 256 * 1024 * 1024
 
+    // MARK: Public
+
     static func listen(at path: String) throws -> Int32 {
         try self.open(path) { fd, address, length in
             // The directory is already 0700; chmod instead of umask, which is process-wide.
@@ -31,7 +33,6 @@ enum UnixSocket {
         }
     }
 
-    /// True if the peer runs as the same user as this process.
     static func isSameUser(_ fd: Int32) -> Bool {
         var uid: uid_t = 0
         var gid: gid_t = 0
@@ -77,7 +78,6 @@ enum UnixSocket {
 
     // MARK: Private
 
-    /// Creates a socket and passes it with the address of `path` to `setUp`. Closes it if `setUp` throws.
     private static func open(
         _ path: String,
         setUp: (Int32, UnsafePointer<sockaddr>, socklen_t) throws -> Void

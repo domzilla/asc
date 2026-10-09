@@ -16,30 +16,6 @@ struct RequestPath: Equatable {
     let path: String
     let queryItems: [URLQueryItem]
 
-    var segments: [Substring] {
-        self.path.split(separator: "/")
-    }
-
-    var url: URL {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = Self.host
-        components.path = self.path
-        if !self.queryItems.isEmpty {
-            components.percentEncodedQueryItems = self.queryItems.map {
-                URLQueryItem(name: Self.encode($0.name), value: $0.value.map(Self.encode))
-            }
-        }
-        return components.url!
-    }
-
-    /// Stricter than URLComponents' default, which leaves `+` unencoded.
-    private static func encode(_ string: String) -> String {
-        let unreserved =
-            CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
-        return string.addingPercentEncoding(withAllowedCharacters: unreserved)!
-    }
-
     /// Accepts `/v1/apps?limit=200` or a full `https://api.appstoreconnect.apple.com/...` URL, such as a
     /// pagination link.
     init(_ raw: String) throws {
@@ -65,6 +41,34 @@ struct RequestPath: Equatable {
         }
         self.path = path
         self.queryItems = parts.count > 1 ? try Self.queryItems(String(parts[1])) : []
+    }
+
+    // MARK: Public
+
+    var segments: [Substring] {
+        self.path.split(separator: "/")
+    }
+
+    var url: URL {
+        var components = URLComponents()
+        components.scheme = "https"
+        components.host = Self.host
+        components.path = self.path
+        if !self.queryItems.isEmpty {
+            components.percentEncodedQueryItems = self.queryItems.map {
+                URLQueryItem(name: Self.encode($0.name), value: $0.value.map(Self.encode))
+            }
+        }
+        return components.url!
+    }
+
+    // MARK: Private
+
+    /// Stricter than URLComponents' default, which leaves `+` unencoded.
+    private static func encode(_ string: String) -> String {
+        let unreserved =
+            CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+        return string.addingPercentEncoding(withAllowedCharacters: unreserved)!
     }
 
     private static func queryItems(_ query: String) throws -> [URLQueryItem] {

@@ -35,14 +35,14 @@ struct Spec {
         private var inFlight: Task<Void, any Error>?
 
         func run(
-            force: Bool,
+            shouldForce: Bool,
             isDue: @Sendable () -> Bool,
             download: @escaping @Sendable () async throws -> Void
         ) async throws {
             if let inFlight = self.inFlight {
                 return try await inFlight.value
             }
-            guard force || isDue() else {
+            guard shouldForce || isDue() else {
                 return
             }
             let task = Task { try await download() }
@@ -94,9 +94,8 @@ struct Spec {
         }
     }
 
-    /// The cached spec's status, downloading Apple's latest spec first if the last check is older than 24 hours.
-    func status(forceCheck: Bool = false) async throws -> Status {
-        try await self.checkIfDue(force: forceCheck)
+    func status(shouldForceCheck: Bool = false) async throws -> Status {
+        try await self.checkIfDue(shouldForce: shouldForceCheck)
         let data = try Data(contentsOf: self.specURL)
         let checkedAt = try FileManager.default.attributesOfItem(atPath: self.checkURL.path)[.modificationDate] as? Date
         return try Status(
@@ -109,7 +108,7 @@ struct Spec {
     /// Lookups aren't gated, so a failed check falls back to the cached spec.
     func document() async throws -> [String: Any] {
         do {
-            try await self.checkIfDue(force: false)
+            try await self.checkIfDue(shouldForce: false)
         } catch where FileManager.default.fileExists(atPath: self.specURL.path) {}
         let data = try Data(contentsOf: self.specURL)
         guard let document = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -131,8 +130,12 @@ struct Spec {
         return Date().timeIntervalSince(checkedAt) > Self.checkInterval
     }
 
-    private func checkIfDue(force: Bool) async throws {
-        try await self.check.run(force: force, isDue: { self.isCheckDue }, download: { try await self.download() })
+    private func checkIfDue(shouldForce: Bool) async throws {
+        try await self.check.run(
+            shouldForce: shouldForce,
+            isDue: { self.isCheckDue },
+            download: { try await self.download() }
+        )
     }
 
     private func download() async throws {

@@ -128,7 +128,7 @@ struct SpecTests {
         try self.cache(checkedAgo: 60)
 
         await #expect(throws: URLError.self) {
-            try await self.spec().status(forceCheck: true)
+            try await self.spec().status(shouldForceCheck: true)
         }
     }
 
@@ -141,7 +141,7 @@ struct SpecTests {
         try await withThrowingTaskGroup(of: Void.self) { group in
             for _ in 0..<20 {
                 group.addTask {
-                    try await check.run(force: false, isDue: { isDue.withLock { $0 } }, download: {
+                    try await check.run(shouldForce: false, isDue: { isDue.withLock { $0 } }, download: {
                         downloads.withLock { $0 += 1 }
                         await Task.yield()
                         isDue.withLock { $0 = false }

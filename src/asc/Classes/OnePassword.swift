@@ -1,5 +1,5 @@
 //
-//  Credentials.swift
+//  OnePassword.swift
 //  asc
 //
 //  Created by Dominic Rodemer on 09/10/2026.
@@ -9,58 +9,14 @@
 import Foundation
 import Security
 
-/// An App Store Connect API key, loaded from a 1Password item that has the fields `key_id`, `issuer_id`,
-/// optionally `vendor_number`, and the attached file `AuthKey_<key_id>.p8`.
-struct Credentials: Codable, CustomStringConvertible {
-    let keyID: String
-    let issuerID: String
-    let vendorNumber: String?
-    let privateKeyPEM: String
-
-    static let referencePlaceholder = "op://Vault/Item"
-
-    var description: String {
-        "Credentials(keyID: \(self.keyID), issuerID: \(self.issuerID), privateKey: <redacted>)"
-    }
-
-    static func load(from itemReference: String) throws -> Credentials {
-        let item = try self.validatedItemReference(itemReference)
-        let op = try OnePassword()
-
-        let keyID = try op.read("\(item)/key_id")
-        guard keyID.range(of: "^[A-Z0-9]{10}$", options: .regularExpression) != nil else {
-            throw ASCError.credentials("key_id must be 10 uppercase letters or digits")
-        }
-        let issuerID = try op.read("\(item)/issuer_id")
-        guard UUID(uuidString: issuerID) != nil else {
-            throw ASCError.credentials("issuer_id must be a UUID")
-        }
-        let privateKeyPEM = try op.read("\(item)/AuthKey_\(keyID).p8")
-        // Optional: only sales and finance report requests need it.
-        let vendorNumber = try? op.read("\(item)/vendor_number")
-
-        return Credentials(keyID: keyID, issuerID: issuerID, vendorNumber: vendorNumber, privateKeyPEM: privateKeyPEM)
-    }
-
-    static func validatedItemReference(_ reference: String) throws -> String {
-        let pattern = "^op://[^/]+/[^/]+$"
-        guard reference.range(of: pattern, options: .regularExpression) != nil else {
-            throw ASCError.credentials(
-                "expected a 1Password item reference like \(self.referencePlaceholder), got '\(reference)'"
-            )
-        }
-        return reference
-    }
-}
-
 /// The 1Password CLI. Resolved from fixed locations and verified to be signed by AgileBits, so a planted `op` earlier
 /// in PATH can't intercept the key.
-private struct OnePassword {
-    static let candidatePaths = ["/opt/homebrew/bin/op", "/usr/local/bin/op"]
-    static let requirement = #"anchor apple generic and certificate leaf[subject.OU] = "2BUA8C4S2C""#
-    static let timeout: TimeInterval = 60
+struct OnePassword {
+    private static let candidatePaths = ["/opt/homebrew/bin/op", "/usr/local/bin/op"]
+    private static let requirement = #"anchor apple generic and certificate leaf[subject.OU] = "2BUA8C4S2C""#
+    private static let timeout: TimeInterval = 60
 
-    let executableURL: URL
+    private let executableURL: URL
 
     init() throws {
         for path in Self.candidatePaths where FileManager.default.isExecutableFile(atPath: path) {
@@ -73,6 +29,8 @@ private struct OnePassword {
         }
         throw ASCError.credentials("1Password CLI not found at \(Self.candidatePaths.joined(separator: " or "))")
     }
+
+    // MARK: Public
 
     func read(_ reference: String) throws -> String {
         let result = try ProcessRunner.run(
@@ -91,6 +49,8 @@ private struct OnePassword {
         }
         return String(decoding: result.stdout, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    // MARK: Private
 
     private static func isSignedByAgileBits(_ url: URL) -> Bool {
         var staticCode: SecStaticCode?

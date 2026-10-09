@@ -161,7 +161,7 @@ enum ASC {
     private static func runSpec(_ arguments: [String]) async throws {
         switch arguments.first {
         case "status":
-            let status = try await Spec.shared.status(forceCheck: arguments.dropFirst().contains("--check"))
+            let status = try await Spec.shared.status(shouldForceCheck: arguments.dropFirst().contains("--check"))
             self.write("""
             reviewed: \(Spec.reviewedVersion) \(Spec.reviewedSHA256)
             latest:   \(status.version) \(status.sha256)

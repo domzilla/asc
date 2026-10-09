@@ -15,7 +15,6 @@ enum HTTPMethod: String, Codable, CaseIterable {
     case patch = "PATCH"
     case delete = "DELETE"
 
-    /// Parses a command-line argument, ignoring case.
     init?(argument: String) {
         self.init(rawValue: argument.uppercased())
     }

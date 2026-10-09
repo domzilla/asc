@@ -23,8 +23,8 @@ struct JWTTests {
     func tokenIsValid() throws {
         let key = P256.Signing.PrivateKey()
         let credentials = Credentials(
-            keyID: "ABCDE12345",
-            issuerID: "00000000-1111-2222-3333-444444444444",
+            keyID: Credentials.KeyID(rawValue: "ABCDE12345"),
+            issuerID: Credentials.IssuerID(rawValue: "00000000-1111-2222-3333-444444444444"),
             vendorNumber: nil,
             privateKeyPEM: key.pemRepresentation
         )
@@ -58,8 +58,8 @@ struct JWTTests {
     @Test("A key that isn't a P-256 PEM key is a credentials error that doesn't echo the key")
     func rejectsInvalidKey() {
         let credentials = Credentials(
-            keyID: "ABCDE12345",
-            issuerID: UUID().uuidString,
+            keyID: Credentials.KeyID(rawValue: "ABCDE12345"),
+            issuerID: Credentials.IssuerID(rawValue: UUID().uuidString),
             vendorNumber: nil,
             privateKeyPEM: "SECRET-NOT-A-KEY"
         )
@@ -76,8 +76,8 @@ struct JWTTests {
     @Test("Credentials never print the private key")
     func credentialsRedactKey() {
         let credentials = Credentials(
-            keyID: "ABCDE12345",
-            issuerID: "issuer",
+            keyID: Credentials.KeyID(rawValue: "ABCDE12345"),
+            issuerID: Credentials.IssuerID(rawValue: "issuer"),
             vendorNumber: nil,
             privateKeyPEM: "SECRET"
         )

@@ -3,11 +3,10 @@ id: '261009-25RTMBD'
 title: Apply the Swift style guide
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.332768Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent
