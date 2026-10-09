@@ -15,13 +15,13 @@ import Foundation
 /// matches any number of further segments (including none).
 enum Blocklist {
     struct Rule {
-        let methods: Set<String>
+        let methods: Set<HTTPMethod>
         let pattern: String
         /// When set, the rule only applies if the request body sets one of these attributes.
         let attributes: Set<String>?
         let reason: String
 
-        init(_ methods: Set<String>, _ pattern: String, attributes: Set<String>? = nil, _ reason: String) {
+        init(_ methods: Set<HTTPMethod>, _ pattern: String, attributes: Set<String>? = nil, _ reason: String) {
             self.methods = methods
             self.pattern = pattern
             self.attributes = attributes
@@ -29,10 +29,8 @@ enum Blocklist {
         }
     }
 
-    static let writeMethods: Set<String> = ["POST", "PATCH", "DELETE"]
-
-    private static let write = Self.writeMethods
-    private static let delete: Set<String> = ["DELETE"]
+    private static let write = Set(HTTPMethod.allCases.filter(\.isWrite))
+    private static let delete: Set<HTTPMethod> = [.delete]
 
     static let rules: [Rule] = [
         // Availability (includes removing an app from sale)
@@ -42,13 +40,13 @@ enum Blocklist {
         Rule(write, "/v*/subscriptionAvailabilities/**", "changes subscription availability"),
         Rule(write, "/v*/subscriptionPlanAvailabilities/**", "changes subscription availability"),
         Rule(
-            ["POST", "PATCH"],
+            [.post, .patch],
             "/v*/subscriptions/**",
             attributes: ["marketSettings"],
             "changes subscription availability"
         ),
         Rule(write, "/v*/endAppAvailabilityPreOrders/**", "ends a pre-order"),
-        Rule(["PATCH"], "/v*/appStoreVersions/*", attributes: ["downloadable"], "changes version availability"),
+        Rule([.patch], "/v*/appStoreVersions/*", attributes: ["downloadable"], "changes version availability"),
 
         // Prices
         Rule(write, "/v*/appPriceSchedules/**", "changes app prices"),
@@ -57,14 +55,14 @@ enum Blocklist {
         Rule(write, "/v*/subscriptions/*/relationships/prices", "changes subscription prices"),
 
         // Certificates
-        Rule(["PATCH", "DELETE"], "/v*/certificates/**", "revokes or deactivates a certificate"),
+        Rule([.patch, .delete], "/v*/certificates/**", "revokes or deactivates a certificate"),
 
         // Users
         Rule(write, "/v*/users/**", "changes users, roles or app access"),
         Rule(write, "/v*/userInvitations/**", "invites or uninvites users"),
 
         // Builds
-        Rule(["PATCH"], "/v*/builds/*", attributes: ["expired"], "expires a build"),
+        Rule([.patch], "/v*/builds/*", attributes: ["expired"], "expires a build"),
 
         // Review submissions and releases
         Rule(write, "/v*/reviewSubmissions/**", "submits or cancels an App Review submission"),
@@ -76,28 +74,28 @@ enum Blocklist {
         Rule(write, "/v*/subscriptionSubmissions/**", "submits a subscription for review"),
         Rule(write, "/v*/subscriptionGroupSubmissions/**", "submits a subscription group for review"),
         Rule(
-            ["PATCH"],
+            [.patch],
             "/v*/appStoreVersions/*",
             attributes: ["releaseType", "earliestReleaseDate"],
             "changes when a version is released"
         ),
         Rule(
-            ["POST"],
+            [.post],
             "/v*/appStoreVersions",
             attributes: ["releaseType", "earliestReleaseDate"],
             "changes when a version is released"
         ),
-        Rule(["POST", "PATCH"], "/v*/nominations/**", attributes: ["submitted"], "submits a featuring nomination"),
+        Rule([.post, .patch], "/v*/nominations/**", attributes: ["submitted"], "submits a featuring nomination"),
 
         // Irreversible settings
         Rule(
-            ["POST", "PATCH"],
+            [.post, .patch],
             "/v*/subscriptions/**",
             attributes: ["familySharable"],
             "enables Family Sharing (irreversible)"
         ),
         Rule(
-            ["POST", "PATCH"],
+            [.post, .patch],
             "/v*/inAppPurchases/**",
             attributes: ["familySharable"],
             "enables Family Sharing (irreversible)"
@@ -143,8 +141,8 @@ enum Blocklist {
 
     /// Returns why the request is blocked, or nil if it may be sent. The caller must send `canonicalBody(_:)`, not the
     /// raw body, so the server parses exactly what was checked here (duplicate JSON keys could otherwise differ).
-    static func violation(method: String, path: RequestPath, body: Data?) -> String? {
-        guard self.writeMethods.contains(method) else {
+    static func violation(method: HTTPMethod, path: RequestPath, body: Data?) -> String? {
+        guard method.isWrite else {
             return nil
         }
 

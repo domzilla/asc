@@ -33,7 +33,7 @@ struct BlocklistTests {
 
     static func violation(_ testCase: Case) throws -> String? {
         try Blocklist.violation(
-            method: testCase.method,
+            method: #require(HTTPMethod(rawValue: testCase.method)),
             path: RequestPath(testCase.path),
             body: testCase.body.map { Data($0.utf8) }
         )
@@ -261,7 +261,7 @@ struct BlocklistTests {
                 Self.attributes("x", attributes.map { #""\#($0)":true"# }.joined(separator: ","))
             }
             for method in rule.methods {
-                let reason = try Self.violation(Case(method, path, body))
+                let reason = try Self.violation(Case(method.rawValue, path, body))
                 #expect(reason == rule.reason, "\(method) \(path) not blocked by \(rule.pattern)")
             }
         }

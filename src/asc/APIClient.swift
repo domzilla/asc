@@ -23,9 +23,9 @@ struct APIClient {
     let credentials: Credentials
 
     /// Sends one request, retrying on 429. Gzip bodies (sales and finance reports) come back decompressed.
-    func send(method: String, path: RequestPath, body: Data?) async throws -> Data {
+    func send(method: HTTPMethod, path: RequestPath, body: Data?) async throws -> Data {
         var request = URLRequest(url: path.url)
-        request.httpMethod = method
+        request.httpMethod = method.rawValue
         if let body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -58,7 +58,7 @@ struct APIClient {
         var next: RequestPath? = path
 
         while let current = next {
-            let page = try await self.send(method: "GET", path: current, body: nil)
+            let page = try await self.send(method: .get, path: current, body: nil)
             guard let document = try JSONSerialization.jsonObject(with: page) as? [String: Any] else {
                 throw ASCError.failure("expected a JSON object from \(current.path)")
             }

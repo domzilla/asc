@@ -22,7 +22,7 @@ Proposed sequence, top to bottom. Check off each sub-item when it is closed.
 - [x] 261009-25RT8X6 — Block release type and date on version creation (blocked by: none)
 - [x] 261009-25RTAJ1 — Close blocklist test gaps (blocked by: none)
 - [x] 261009-25RT5QP — Decide whether agent status may show Key ID and Issuer ID (blocked by: none)
-- [ ] 261009-25RTRHW — Make the write gate safe for every HTTP method (blocked by: none)
+- [x] 261009-25RTRHW — Make the write gate safe for every HTTP method (blocked by: none)
 - [ ] 261009-25RT975 — Share rule matching between Blocklist and spec find (blocked by: 261009-25RTRHW)
 - [ ] 261009-25RTCW3 — Spec lookups parse once and work offline (blocked by: none)
 - [ ] 261009-25RTZ42 — Run one spec check at a time in the agent (blocked by: 261009-25RTCW3)

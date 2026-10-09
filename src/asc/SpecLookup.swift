@@ -10,8 +10,6 @@ import Foundation
 
 /// Endpoint lookups in the cached spec, so agents don't have to read 7 MB of JSON.
 struct SpecLookup {
-    static let methods = ["GET", "POST", "PATCH", "DELETE"]
-
     let document: [String: Any]
 
     private var paths: [String: [String: Any]] {
@@ -28,15 +26,15 @@ struct SpecLookup {
     func find(_ terms: [String]) -> [String] {
         var lines = [String]()
         for path in self.paths.keys.sorted() {
-            for method in Self.methods {
-                guard let operation = self.paths[path]?[method.lowercased()] as? [String: Any] else {
+            for method in HTTPMethod.allCases {
+                guard let operation = self.paths[path]?[method.rawValue.lowercased()] as? [String: Any] else {
                     continue
                 }
                 let haystack = "\(path) \(operation["operationId"] as? String ?? "")".lowercased()
                 guard terms.allSatisfy({ haystack.contains($0.lowercased()) }) else {
                     continue
                 }
-                lines.append("\(method) \(path)\(self.blockStatus(method: method, path: path))")
+                lines.append("\(method.rawValue) \(path)\(self.blockStatus(method: method, path: path))")
             }
         }
         return lines
@@ -44,16 +42,16 @@ struct SpecLookup {
 
     /// Parameters, resolved request body and response schema names of one operation. `path` may be the template
     /// (`/v1/apps/{id}`) or a concrete path (`/v1/apps/123`).
-    func show(method: String, path: String) throws -> String {
-        let method = method.uppercased()
+    func show(method argument: String, path: String) throws -> String {
         guard
+            let method = HTTPMethod(argument: argument),
             let template = self.template(matching: path),
-            let operation = self.paths[template]?[method.lowercased()] as? [String: Any] else
+            let operation = self.paths[template]?[method.rawValue.lowercased()] as? [String: Any] else
         {
-            throw ASCError.usage("no \(method) \(path) in the spec; try `asc spec find <term>`")
+            throw ASCError.usage("no \(argument.uppercased()) \(path) in the spec; try `asc spec find <term>`")
         }
 
-        var result: [String: Any] = ["operation": "\(method) \(template)"]
+        var result: [String: Any] = ["operation": "\(method.rawValue) \(template)"]
         result["blocked"] = self.blockStatus(method: method, path: template).trimmingCharacters(in: .whitespaces)
         if let operationID = operation["operationId"] {
             result["operationId"] = operationID
@@ -82,7 +80,7 @@ struct SpecLookup {
 
     // MARK: Private
 
-    private func blockStatus(method: String, path: String) -> String {
+    private func blockStatus(method: HTTPMethod, path: String) -> String {
         guard let requestPath = try? RequestPath(path.replacingOccurrences(of: "{id}", with: "ID")) else {
             return ""
         }

@@ -69,10 +69,11 @@ enum ASC {
             try await self.runAgent(Array(arguments.dropFirst()))
         case "spec":
             try await self.runSpec(Array(arguments.dropFirst()))
-        case let method where SpecLookup.methods.contains(method.uppercased()):
-            try self.runRequest(method: method.uppercased(), Array(arguments.dropFirst()))
         default:
-            throw ASCError.usage("unknown command '\(command)'\n\n\(self.usage)")
+            guard let method = HTTPMethod(argument: command) else {
+                throw ASCError.usage("unknown command '\(command)'\n\n\(self.usage)")
+            }
+            try self.runRequest(method: method, Array(arguments.dropFirst()))
         }
     }
 
@@ -109,7 +110,7 @@ enum ASC {
         }
     }
 
-    private static func runRequest(method: String, _ arguments: [String]) throws {
+    private static func runRequest(method: HTTPMethod, _ arguments: [String]) throws {
         var path: String?
         var bodySource: String?
         var outPath: String?

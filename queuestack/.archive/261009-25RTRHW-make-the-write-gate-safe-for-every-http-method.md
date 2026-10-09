@@ -3,11 +3,10 @@ id: '261009-25RTRHW'
 title: Make the write gate safe for every HTTP method
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.235630Z'
-status: open
+status: closed
 labels:
 - refactoring
 ---
-
 
 
 ## Parent

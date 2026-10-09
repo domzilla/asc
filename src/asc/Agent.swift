@@ -23,7 +23,7 @@ enum Agent {
         }
 
         var command: Command
-        var method: String?
+        var method: HTTPMethod?
         var path: String?
         var body: Data?
         var isPaginated = false
@@ -230,22 +230,22 @@ private struct Server {
 
     private func perform(_ request: Agent.Request) async -> Agent.Response {
         do {
-            guard let method = request.method?.uppercased(), SpecLookup.methods.contains(method) else {
-                throw ASCError.usage("unsupported method '\(request.method ?? "")'")
+            guard let method = request.method else {
+                throw ASCError.usage("missing method")
             }
             guard let rawPath = request.path else {
                 throw ASCError.usage("missing path")
             }
-            if request.isPaginated, method != "GET" {
+            if request.isPaginated, method != .get {
                 throw ASCError.usage("--paginate only works with GET")
             }
-            if request.body != nil, method == "GET" {
+            if request.body != nil, method == .get {
                 throw ASCError.usage("GET requests take no --body")
             }
 
             let path = try RequestPath(rawPath)
             var body = request.body
-            if Blocklist.writeMethods.contains(method) {
+            if method.isWrite {
                 if let reason = Blocklist.violation(method: method, path: path, body: body) {
                     throw ASCError.blocked(reason)
                 }
