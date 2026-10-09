@@ -83,8 +83,13 @@ struct Spec {
         )
     }
 
+    /// Lookups aren't gated, so a failed check falls back to the cached spec.
     func document() async throws -> [String: Any] {
-        _ = try await self.status()
+        if self.isCheckDue {
+            do {
+                try await self.download()
+            } catch where FileManager.default.fileExists(atPath: self.specURL.path) {}
+        }
         let data = try Data(contentsOf: self.specURL)
         guard let document = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw ASCError.failure("the cached spec is not a JSON object")

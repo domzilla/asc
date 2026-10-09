@@ -3,11 +3,10 @@ id: '261009-25RTCW3'
 title: Spec lookups parse once and work offline
 author: Dominic Rodemer
 created_at: '2026-10-09T19:50:50.246686Z'
-status: open
+status: closed
 labels:
 - bug
 ---
-
 
 
 ## Parent

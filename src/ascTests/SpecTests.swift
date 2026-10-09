@@ -86,6 +86,24 @@ struct SpecTests {
         }, throws: Self.isSpecGateError)
     }
 
+    @Test("Lookups fall back to the cached spec when the due check fails")
+    func documentUsesCacheWhenCheckFails() async throws {
+        defer { try? FileManager.default.removeItem(at: self.directory) }
+        try self.cache(checkedAgo: Spec.checkInterval + 60)
+
+        let document = try await self.spec().document()
+        #expect((document["info"] as? [String: Any])?["version"] as? String == "9.9.9")
+    }
+
+    @Test("Lookups fail when there is no cached spec and the download fails")
+    func documentFailsWithoutCache() async {
+        defer { try? FileManager.default.removeItem(at: self.directory) }
+
+        await #expect(throws: URLError.self) {
+            try await self.spec().document()
+        }
+    }
+
     @Test("A forced check fails when the download fails, even with a fresh cache")
     func forcedCheckFails() async throws {
         defer { try? FileManager.default.removeItem(at: self.directory) }
